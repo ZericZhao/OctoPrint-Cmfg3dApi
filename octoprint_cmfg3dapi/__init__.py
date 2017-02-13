@@ -1,13 +1,13 @@
 # coding=utf-8
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
-### (Don't forget to remove me)
-# This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
-# as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
-# defining your plugin as a template plugin, settings and asset plugin. Feel free to add or remove mixins
-# as necessary.
-#
-# Take a look at the documentation on what other plugin mixins are available.
+__author__ = "Zeric Zhao <zhao5401@126.com; zhao5401@buaa.edu.cn>"
+__license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
+__copyright__ = "Copyright (C) 2017 Cloud Manufacturing Platform Project - Released under terms of the AGPLv3 License"
+
+import logging
+import logging.handlers
+import os
 
 import octoprint.plugin
 
@@ -15,6 +15,9 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
                       octoprint.plugin.AssetPlugin,
                       octoprint.plugin.TemplatePlugin,
 					  octoprint.plugin.StartupPlugin):
+
+	def __init__(self):
+		self._logger = logging.getLogger("octoprint.plugins.cmfg3dapi")
 
 	##~~ SettingsPlugin mixin
 
@@ -56,6 +59,18 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 				pip="https://github.com/ZericZhao/OctoPrint-Cmfg3dApi/archive/{target_version}.zip"
 			)
 		)
+
+	##~~ StartupPlugin API
+
+	def on_startup(self, host, port):
+		# setup customized logger
+		from octoprint.logging.handlers import CleaningTimedRotatingFileHandler
+		cmfg3d_logging_handler = CleaningTimedRotatingFileHandler(self._settings.get_plugin_logfile_path(), when="D", backupCount=3)
+		cmfg3d_logging_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s"))
+		cmfg3d_logging_handler.setLevel(logging.DEBUG)
+
+		self._logger.addHandler(cmfg3d_logging_handler)
+		self._logger.setLevel(logging.DEBUG if self._settings.get_boolean(["debug_logging"]) else logging.INFO)
 
 	def on_after_startup(self):
 		self._logger.info("Hello World! (more: %s)" % self._settings.get(["url"]))

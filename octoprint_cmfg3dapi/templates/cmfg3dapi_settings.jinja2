@@ -1,8 +1,13 @@
 <form class="form-horizontal">
     <div class="control-group">
-        <label class="control-label">{{ _('URL') }}</label>
+        <label class="control-label">{{ _('Consumer Key') }}</label>
         <div class="controls">
-            <input type="text" class="input-block-level" data-bind="value: settings.plugins.cmfg3dapi.url">
+            <input type="text" class="input-block-level" data-bind="value: settings.plugins.cmfg3dapi.consumerKey">
         </div>
+        <label class="control-label">{{ _('Consumer Secret') }}</label>
+        <div class="controls">
+            <input type="text" class="input-block-level" data-bind="value: settings.plugins.cmfg3dapi.consumerSecret">
+        </div>
+
     </div>
 </form>
