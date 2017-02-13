@@ -1,0 +1,80 @@
+[2017-02-12 20:31:08,911] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 20:31:08,933] ERROR: queues call failed: unknown API error: list indices must be integers, not str
+[2017-02-12 20:31:08,933] ERROR: exception: <type 'exceptions.TypeError'>.TypeError
+[2017-02-12 20:31:08,933] ERROR: list indices must be integers, not str
+Traceback (most recent call last):
+  File "/home/zeric/PythonProjects/OctoPrint-Cmfg3dApi/octoprint_cmfg3dapi/botqueueapi.py", line 122, in apiCall
+    if result['status'] == 'error':
+TypeError: list indices must be integers, not str
+[2017-02-12 20:34:42,826] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 20:34:42,848] ERROR: queues call failed: unknown API error: list indices must be integers, not str
+[2017-02-12 20:34:42,849] ERROR: exception: <type 'exceptions.TypeError'>.TypeError
+[2017-02-12 20:34:42,849] ERROR: list indices must be integers, not str
+Traceback (most recent call last):
+  File "/home/zeric/PythonProjects/OctoPrint-Cmfg3dApi/octoprint_cmfg3dapi/botqueueapi.py", line 122, in apiCall
+    if result['status'] == 'error':
+TypeError: list indices must be integers, not str
+[2017-02-12 20:34:52,855] DEBUG: Calling http://localhost:8080/api/ - queues (999998 tries remaining)
+[2017-02-12 20:34:52,878] ERROR: queues call failed: unknown API error: list indices must be integers, not str
+[2017-02-12 20:34:52,878] ERROR: exception: <type 'exceptions.TypeError'>.TypeError
+[2017-02-12 20:34:52,878] ERROR: list indices must be integers, not str
+Traceback (most recent call last):
+  File "/home/zeric/PythonProjects/OctoPrint-Cmfg3dApi/octoprint_cmfg3dapi/botqueueapi.py", line 122, in apiCall
+    if result['status'] == 'error':
+TypeError: list indices must be integers, not str
+[2017-02-12 20:35:02,888] DEBUG: Calling http://localhost:8080/api/ - queues (999997 tries remaining)
+[2017-02-12 20:35:02,908] ERROR: queues call failed: unknown API error: list indices must be integers, not str
+[2017-02-12 20:35:02,908] ERROR: exception: <type 'exceptions.TypeError'>.TypeError
+[2017-02-12 20:35:02,908] ERROR: list indices must be integers, not str
+Traceback (most recent call last):
+  File "/home/zeric/PythonProjects/OctoPrint-Cmfg3dApi/octoprint_cmfg3dapi/botqueueapi.py", line 122, in apiCall
+    if result['status'] == 'error':
+TypeError: list indices must be integers, not str
+[2017-02-12 20:45:23,526] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 20:45:23,546] DEBUG: Response status code: 200
+[2017-02-12 20:45:23,546] ERROR: queues call failed: unknown API error: list indices must be integers, not str
+[2017-02-12 20:45:23,547] ERROR: exception: <type 'exceptions.TypeError'>.TypeError
+[2017-02-12 20:45:23,547] ERROR: list indices must be integers, not str
+Traceback (most recent call last):
+  File "/home/zeric/PythonProjects/OctoPrint-Cmfg3dApi/octoprint_cmfg3dapi/botqueueapi.py", line 123, in apiCall
+    if result['status'] == 'error':
+TypeError: list indices must be integers, not str
+[2017-02-12 20:46:24,881] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 20:46:24,900] DEBUG: Response status code: 200
+[2017-02-12 20:46:24,900] ERROR: queues call failed: unknown API error: global name 'result' is not defined
+[2017-02-12 20:46:24,900] ERROR: exception: <type 'exceptions.NameError'>.NameError
+[2017-02-12 20:46:24,900] ERROR: global name 'result' is not defined
+Traceback (most recent call last):
+  File "/home/zeric/PythonProjects/OctoPrint-Cmfg3dApi/octoprint_cmfg3dapi/botqueueapi.py", line 123, in apiCall
+    if result['status'] == 'error':
+NameError: global name 'result' is not defined
+[2017-02-12 20:51:09,067] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 20:51:09,087] DEBUG: Response status code: 200
+[2017-02-12 20:51:21,965] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 20:51:21,987] DEBUG: Response status code: 200
+[2017-02-12 20:58:58,915] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 20:58:58,936] DEBUG: Response status code: 200
+[2017-02-12 21:19:43,417] DEBUG: Calling http://localhost:8080/api/ - test (999999 tries remaining)
+[2017-02-12 21:19:43,432] DEBUG: Response status code: 200
+[2017-02-12 21:19:43,432] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 21:19:43,458] DEBUG: Response status code: 200
+[2017-02-12 21:20:49,850] DEBUG: Calling http://localhost:8080/api/ - test (999999 tries remaining)
+[2017-02-12 21:20:49,860] DEBUG: Response status code: 200
+[2017-02-12 21:20:49,860] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 21:20:49,881] DEBUG: Response status code: 200
+[2017-02-12 21:21:12,327] DEBUG: Calling http://localhost:8080/api/ - test (999999 tries remaining)
+[2017-02-12 21:21:12,335] DEBUG: Response status code: 200
+[2017-02-12 21:21:12,336] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 21:21:12,356] DEBUG: Response status code: 200
+[2017-02-12 21:22:39,734] DEBUG: Calling http://localhost:8080/api/ - test (999999 tries remaining)
+[2017-02-12 21:22:39,743] DEBUG: Response status code: 200
+[2017-02-12 21:22:39,743] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 21:22:39,765] DEBUG: Response status code: 200
+[2017-02-12 21:22:49,299] DEBUG: Calling http://localhost:8080/api/ - test (999999 tries remaining)
+[2017-02-12 21:22:49,308] DEBUG: Response status code: 200
+[2017-02-12 21:22:49,308] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 21:22:49,326] DEBUG: Response status code: 200
+[2017-02-12 21:22:58,909] DEBUG: Calling http://localhost:8080/api/ - test (999999 tries remaining)
+[2017-02-12 21:22:58,917] DEBUG: Response status code: 200
+[2017-02-12 21:22:58,917] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
+[2017-02-12 21:22:58,938] DEBUG: Response status code: 200

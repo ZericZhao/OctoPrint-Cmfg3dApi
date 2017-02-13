@@ -1,0 +1,2 @@
+include README.md
+recursive-include octoprint_cmfg3dapi *
