@@ -47,6 +47,10 @@ class BotQueueAPI():
 
         self.setToken("8a364f8a-2feb-4ee8-9c79-9c2c67fc6486", "5aTWR5kxuq10u3IsV/PHUEgjLXo0rkUFymvfsPk4dIJsG5XoQ8RojWmW2OLgyy/NJot64r7UpO9jSzmDTLXJCOG7x6hzkeoKAgELk4BYEDE=")
 
+    def config(self, consumer_key, consumer_secret):
+        self.consumer_key = consumer_key
+        self.consumer_secret = consumer_secret
+
     def setToken(self, token_key, token_secret):
         self.token_key = token_key
         self.token_secret = token_secret

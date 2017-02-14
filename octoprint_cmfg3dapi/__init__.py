@@ -8,23 +8,26 @@ __copyright__ = "Copyright (C) 2017 Cloud Manufacturing Platform Project - Relea
 import logging
 import logging.handlers
 import os
+import flask
+import botqueueapi
 
 import octoprint.plugin
 
 class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
                       octoprint.plugin.AssetPlugin,
                       octoprint.plugin.TemplatePlugin,
-					  octoprint.plugin.StartupPlugin):
+					  octoprint.plugin.StartupPlugin,
+					  octoprint.plugin.BlueprintPlugin):
 
 	def __init__(self):
 		self._logger = logging.getLogger("octoprint.plugins.cmfg3dapi")
+		self.cmfg3dapi = botqueueapi.BotQueueAPI();
 
 	##~~ SettingsPlugin mixin
 
 	def get_settings_defaults(self):
 		return dict(
 			# put your plugin's default settings here
-			url = "http://en.wikipedia.org/wiki/Hello_world"
 		)
 
 	##~~ AssetPlugin mixin
@@ -74,12 +77,19 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 
 	def on_after_startup(self):
 		self._logger.info("Hello World! (more: %s)" % self._settings.get(["url"]))
+		self.cmfg3dapi.setToken()
 
 	def get_template_configs(self):
 		return [
-			dict(type="navbar", custom_bindings=False),
+			dict(type="tab", custom_bindings=False),
 			dict(type="settings", custom_bindings=False)
 		]
+
+	@octoprint.plugin.BlueprintPlugin.route("/authorize", methods=["GET"])
+	def authorize(self):
+		if not "text" in flask.request.values:
+			return flask.make_response("expected a text to echo back", 400)
+		return flask.request.values["text"]
 
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
