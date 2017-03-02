@@ -13,6 +13,13 @@ $(function() {
         // self.settingsViewModel = parameters[1];
 
         // TODO: Implement your plugin's view model here.
+        self.settings = parameters[0];
+        self.currentUrl = ko.observable();
+        self.newUrl = ko.observable();
+
+        self.goToUrl = function () {
+            self.currentUrl(self.newUrl);
+        };
     }
 
     // view model class, parameters for constructor, container to bind to
@@ -20,9 +27,9 @@ $(function() {
         Cmfg3dapiViewModel,
 
         // e.g. loginStateViewModel, settingsViewModel, ...
-        [ /* "loginStateViewModel", "settingsViewModel" */ ],
+        [ "settingsViewModel" ],
 
         // e.g. #settings_plugin_cmfg3dapi, #tab_plugin_cmfg3dapi, ...
-        [ /* ... */ ]
+        [ "#tab_plugin_cmfg3dapi" ]
     ]);
 });
