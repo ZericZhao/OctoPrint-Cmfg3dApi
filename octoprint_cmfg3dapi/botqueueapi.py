@@ -7,6 +7,7 @@ import traceback
 from oauth_hook import OAuthHook
 import requests
 
+
 class NetworkError(Exception):
     pass
 
@@ -22,8 +23,9 @@ class AuthError(Exception):
 class BotQueueAPI():
     version = 0.1
     name = 'Bumblebee'
-    localip = None
+    localIp = None
     consumer_key = ""
+    consumer_secret = ""
 
     def __init__(self):
         self.log = logging.getLogger('botqueue')
@@ -36,16 +38,13 @@ class BotQueueAPI():
         self.endpoint_url = "http://localhost:8080/api/"
 
         # this is helpful for raspberry pi and future websockets stuff
-        self.localip = self.getLocalIPAddress()
+        self.localIp = self.getLocalIPAddress()
 
         # create our requests session.
         self.session = requests.session()
 
         # self.consumer = oauth.Consumer(self.config['app']['consumer_key'], self.config['app']['consumer_secret'])
-        self.consumer_key = "133f1b38-8a3f-464c-b2d0-ca8bb7887aaf"
-        self.consumer_secret = "pSyXPRL1vVZAuePcfy6RvT5IvXxqAZj7/7u5ROD4k7BRkpqzZ/4rTxID+CRay2aOmAuGPTLzWQqLkGr+50QMrjrWtp57Wj5VGPNq4XMoko4="
-
-        self.setToken("8a364f8a-2feb-4ee8-9c79-9c2c67fc6486", "5aTWR5kxuq10u3IsV/PHUEgjLXo0rkUFymvfsPk4dIJsG5XoQ8RojWmW2OLgyy/NJot64r7UpO9jSzmDTLXJCOG7x6hzkeoKAgELk4BYEDE=")
+        # self.consumer_key = "133f1b38-8a3f-464c-b2d0-ca8bb7887aaf"
 
     def config(self, consumer_key, consumer_secret):
         self.consumer_key = consumer_key
@@ -70,9 +69,9 @@ class BotQueueAPI():
         parameters['_client_version'] = self.version
         parameters['_client_name'] = self.name
 
-        self.localip = self.getLocalIPAddress()
-        if self.localip:
-            parameters['_local_ip'] = self.localip
+        self.localIp = self.getLocalIPAddress()
+        if self.localIp:
+            parameters['_local_ip'] = self.localIp
         # parameters['api_call'] = call
         parameters['api_output'] = 'json'
 
@@ -163,13 +162,10 @@ class BotQueueAPI():
 
     def requestToken(self):
         # make our token request call or error
+        self.my_oauth_hook = OAuthHook(self.consumer_key, self.consumer_secret)
         result = self.apiCall('requesttoken', ignoreInvalid=True)
-
-        if result['status'] == 'success':
-            self.setToken(result['data']['oauth_token'], result['data']['oauth_token_secret'])
-            return result['data']
-        else:
-            raise Exception("Error getting token: %s" % result['error'])
+        self.setToken(result['data']['oauth_token'], result['data']['oauth_token_secret'])
+        return result['data']
 
     def getAuthorizeUrl(self):
         return self.authorize_url + "?oauth_token=" + self.token_key
@@ -185,8 +181,7 @@ class BotQueueAPI():
 
     def authorize(self):
         try:
-            # Step 0: Initialize to just our consumer key and secret.
-            self.my_oauth_hook = OAuthHook(self.consumer_key, self.consumer_secret)
+            # Step 0: Initialize to just our consumer key and secret.Now moved to self.requestToken()
 
             # Step 1: Get a request token. This is a temporary token that is used for
             # having the user authorize an access token and to sign the request to obtain

@@ -16,10 +16,17 @@ $(function() {
         self.settings = parameters[0];
         self.currentUrl = ko.observable();
         self.newUrl = ko.observable();
+        self.displayed = ko.observableArray();
 
-        self.goToUrl = function () {
-            self.currentUrl(self.newUrl);
+        self.requestToken = function () {
+            $.get("/plugin/cmfg3dapi/authorize",{}).done(function (content) {
+                self.displayed.push(content);
+            });
         };
+
+        /*self.onBeforeBinding = function () {
+            self.newUrl(self.settings.settings.plugins.cmfg3dapi.url())
+        }*/
     }
 
     // view model class, parameters for constructor, container to bind to

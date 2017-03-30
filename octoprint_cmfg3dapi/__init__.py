@@ -9,32 +9,39 @@ import logging
 import logging.handlers
 import os
 import flask
-import botqueueapi
+from .botqueueapi import BotQueueAPI
+
 
 import octoprint.plugin
+
 
 class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
                       octoprint.plugin.AssetPlugin,
                       octoprint.plugin.TemplatePlugin,
-					  octoprint.plugin.StartupPlugin,
-					  octoprint.plugin.BlueprintPlugin):
+                      octoprint.plugin.StartupPlugin,
+                      octoprint.plugin.BlueprintPlugin):
 
 	def __init__(self):
 		self._logger = logging.getLogger("octoprint.plugins.cmfg3dapi")
-		self.cmfg3dapi = botqueueapi.BotQueueAPI();
+		self.cmfg3dapi = BotQueueAPI()
 
 	##~~ SettingsPlugin mixin
 
 	def get_settings_defaults(self):
 		return dict(
 			# put your plugin's default settings here
+			url = "https://www.baidu.com",
+			endpoint = "http://localhost:8080/api",
+			authorize = "http://localhost:8080/authorize",
+			consumerKey = "133f1b38-8a3f-464c-b2d0-ca8bb7887aaf",
+			consumerSecret = "pSyXPRL1vVZAuePcfy6RvT5IvXxqAZj7/7u5ROD4k7BRkpqzZ/4rTxID+CRay2aOmAuGPTLzWQqLkGr+50QMrjrWtp57Wj5VGPNq4XMoko4="
 		)
 
 	##~~ AssetPlugin mixin
 
 	def get_assets(self):
 		# Define your plugin's asset files to automatically include in the
-		# core UI here.
+		# core UI here.self
 		return dict(
 			js=["js/cmfg3dapi.js"],
 			css=["css/cmfg3dapi.css"],
@@ -77,7 +84,7 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 
 	def on_after_startup(self):
 		self._logger.info("Hello World! (more: %s)" % self._settings.get(["url"]))
-		self.cmfg3dapi.setToken()
+		self.cmfg3dapi.config(self._settings.get(["consumerKey"]), self._settings.get(["consumerSecret"]))
 
 	def get_template_configs(self):
 		return [
@@ -87,9 +94,11 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 
 	@octoprint.plugin.BlueprintPlugin.route("/authorize", methods=["GET"])
 	def authorize(self):
-		if not "text" in flask.request.values:
-			return flask.make_response("expected a text to echo back", 400)
-		return flask.request.values["text"]
+		self.cmfg3dapi.requestToken()
+		return self.cmfg3dapi.getAuthorizeUrl()
+
+	def scanDevice(self):
+		self.cmfg3dapi.grabJob()
 
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
