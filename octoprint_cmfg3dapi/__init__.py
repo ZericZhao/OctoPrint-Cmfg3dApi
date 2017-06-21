@@ -97,8 +97,9 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 		self.cmfg3dapi.requestToken()
 		return self.cmfg3dapi.getAuthorizeUrl()
 
-	def scanDevice(self):
-		self.cmfg3dapi.grabJob()
+	@octoprint.plugin.BlueprintPlugin.route("/listJobs", methods=["GET"])
+	def grabJob(self):
+		jobList = self.cmfg3dapi.listJobs(flask.request.values["queueId"])
 
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py

@@ -33,7 +33,7 @@ plugin_url = "https://github.com/ZericZhao/OctoPrint-Cmfg3dApi"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = []
+plugin_requires = ["requests-oauth>=0.4.1"]
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point

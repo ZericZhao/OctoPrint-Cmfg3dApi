@@ -16,7 +16,7 @@ $(function() {
         self.settings = parameters[0];
         self.currentUrl = ko.observable();
         self.newUrl = ko.observable();
-        self.displayed = ko.observableArray();
+        self.displayed = ko.observableArray([]);
 
         self.requestToken = function () {
             $.get("/plugin/cmfg3dapi/authorize",{}).done(function (content) {
@@ -24,9 +24,15 @@ $(function() {
             });
         };
 
-        /*self.onBeforeBinding = function () {
+        self.onBeforeBinding = function () {
             self.newUrl(self.settings.settings.plugins.cmfg3dapi.url())
-        }*/
+        };
+
+        self.grabJob = function () {
+            console.log("grab job");
+            self.displayed.push("grabJob");
+            console.log(self.displayed());
+        }
     }
 
     // view model class, parameters for constructor, container to bind to
