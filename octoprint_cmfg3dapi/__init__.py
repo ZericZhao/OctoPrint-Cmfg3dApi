@@ -95,11 +95,20 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 	@octoprint.plugin.BlueprintPlugin.route("/authorize", methods=["GET"])
 	def authorize(self):
 		self.cmfg3dapi.requestToken()
-		return self.cmfg3dapi.getAuthorizeUrl()
+		return flask.jsonify(self.cmfg3dapi.getAuthorizeUrl())
 
 	@octoprint.plugin.BlueprintPlugin.route("/listJobs", methods=["GET"])
 	def grabJob(self):
-		jobList = self.cmfg3dapi.listJobs(flask.request.values["queueId"])
+		return
+		#jobList = self.cmfg3dapi.listJobs(flask.request.values["queueId"])
+
+	@octoprint.plugin.BlueprintPlugin.route("/checkSettings", methods=["GET"])
+	def checkSettings(self):
+		result = dict(
+			consumerKey = self.cmfg3dapi.consumer_key,
+			consumerSecret = self.cmfg3dapi.consumer_secret
+		)
+		return flask.jsonify(result)
 
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py

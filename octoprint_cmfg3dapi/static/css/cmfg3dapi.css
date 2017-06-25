@@ -3,3 +3,6 @@
     min-height:340px;
     margin-bottom:5px;
 }
+#tab_plugin_cmfg3dapi .terminal #cmfg3d-terminal span {
+    display: block;
+}

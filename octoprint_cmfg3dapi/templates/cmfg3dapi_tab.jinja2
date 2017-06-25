@@ -9,12 +9,13 @@
     </div>
 </div>
 <div class="terminal">
-    <pre id="cmfg3d-terminal" class="pre-scrollable" data-bind="foreach: displayed"><span data-bind="text: line, css: {muted: type == 'filtered' || type == 'cut'}"></span></pre>
+    <pre id="cmfg3d-terminal" class="pre-scrollable" data-bind="foreach: displayed"><span data-bind="text: line"></span></pre>
 </div>
 <div class="btn-toolbar">
     <div class="btn-group">
         <button class="btn" title="{{ _('Request') }}" data-bind="click: requestToken">{{ _('Request') }}</button>
-        <button class="btn" title="{{ _('Grab JOb') }}" data-bind="click: grabJob">{{ _('Grab Job') }}</button>
-        <button class="btn" title="{{ _('Scan Device') }}">{{ _('Scan Device') }}</button>
+        <button class="btn" title="{{ _('Grab Job') }}" data-bind="click: grabJob">{{ _('Grab Job') }}</button>
+        <button class="btn" title="{{ _('Check Settings') }}" data-bind="click: checkSettings">{{ _('Check Settings') }}</button>
+        <button class="btn align-right" title="{{ _('Clear') }}" data-bind="click: clearTerminal">{{ _('Clear') }}</button>
     </div>
 </div>

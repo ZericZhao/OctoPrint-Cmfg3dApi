@@ -162,8 +162,8 @@ class BotQueueAPI():
 
     def requestToken(self):
         # make our token request call or error
-        self.my_oauth_hook = OAuthHook(self.consumer_key, self.consumer_secret)
-        result = self.apiCall('requesttoken', ignoreInvalid=True)
+        self.my_oauth_hook = OAuthHook(consumer_key=self.consumer_key, consumer_secret=self.consumer_secret)
+        result = self.apiCall(call='request_token', ignoreInvalid=True, url=self.authorize_url)
         self.setToken(result['data']['oauth_token'], result['data']['oauth_token_secret'])
         return result['data']
 

@@ -47,7 +47,7 @@ TypeError: list indices must be integers, not str
 Traceback (most recent call last):
   File "/home/zeric/PythonProjects/OctoPrint-Cmfg3dApi/octoprint_cmfg3dapi/botqueueapi.py", line 123, in apiCall
     if result['status'] == 'error':
-NameError: global name 'result' is not defined
+NameError: global name 'result' is nloadot defined
 [2017-02-12 20:51:09,067] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
 [2017-02-12 20:51:09,087] DEBUG: Response status code: 200
 [2017-02-12 20:51:21,965] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
@@ -78,3 +78,11 @@ NameError: global name 'result' is not defined
 [2017-02-12 21:22:58,917] DEBUG: Response status code: 200
 [2017-02-12 21:22:58,917] DEBUG: Calling http://localhost:8080/api/ - queues (999999 tries remaining)
 [2017-02-12 21:22:58,938] DEBUG: Response status code: 200
+[2017-06-24 11:39:48,272] DEBUG: Calling http://localhost:8080/api/ - test (999999 tries remaining)
+[2017-06-24 11:39:48,278] ERROR: test call failed: unknown API error: BotQueueAPI instance has no attribute 'my_oauth_hook'
+[2017-06-24 11:39:48,278] ERROR: exception: <type 'exceptions.AttributeError'>.AttributeError
+[2017-06-24 11:39:48,278] ERROR: BotQueueAPI instance has no attribute 'my_oauth_hook'
+Traceback (most recent call last):
+  File "/home/zeric/PythonProjects/OctoPrint-Cmfg3dApi/octoprint_cmfg3dapi/botqueueapi.py", line 105, in apiCall
+    request = self.my_oauth_hook(request)
+AttributeError: BotQueueAPI instance has no attribute 'my_oauth_hook'
