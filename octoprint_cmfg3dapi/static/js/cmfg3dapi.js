@@ -18,10 +18,14 @@ $(function() {
         self.newUrl = ko.observable();
         self.displayed = ko.observableArray([]);
 
-        self.requestToken = function () {
-            $.get("/plugin/cmfg3dapi/authorize",{}).done(function (content) {
-                self.displayed.push({line: content});
-                self.log(content);
+        self.register = function () {
+            $.get("/plugin/cmfg3dapi/register",{}).done(function (content) {
+                if (content.startsWith("http")) {
+                    self.displayed.push({line: "Authorize client trough the following url:"})
+                    self.displayed.push({line: content});
+                } else {
+                    self.displayed.push({line: content});
+                }
             });
         };
 
@@ -41,12 +45,13 @@ $(function() {
 
         self.checkSettings = function () {
             $.get("/plugin/cmfg3dapi/checkSettings", {}).done(function (content) {
-                // var settings = JSON.parse(content);
-                // self.displayed.push({line: "consumerKey from set: "+settings["consumerKey"]});
-                // self.displayed.push({line: "consumerSecret from set: "+settings["consumerSecret"]});
-                // self.displayed.push({line: "consumerKey from obj: "+settings[2]});
-                // self.displayed.push({line: "consumerSecret from obj: "+settings[3]});
-                self.displayed.push({line: content});
+                console.log(content);
+                self.displayed.push({line: "consumerKey from set: "+content["consumerKey"]});
+                self.displayed.push({line: "consumerSecret from set: "+content["consumerSecret"]});
+                if (Boolean(content['tokenKey'])){
+                    self.displayed.push({line: "tokenKey from obj: "+content['tokenKey']});
+                    self.displayed.push({line: "tokenSecret from obj: "+content['tokenSecret']});
+                }
             })
         }
     }

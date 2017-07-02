@@ -7,9 +7,12 @@ __copyright__ = "Copyright (C) 2017 Cloud Manufacturing Platform Project - Relea
 
 import logging
 import logging.handlers
+import time
+import threading
 import os
 import flask
-from .botqueueapi import BotQueueAPI
+from .cmfg3dAPI import Cmfg3dAPI
+from octoprint.settings import Settings
 
 
 import octoprint.plugin
@@ -23,7 +26,9 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 
 	def __init__(self):
 		self._logger = logging.getLogger("octoprint.plugins.cmfg3dapi")
-		self.cmfg3dapi = BotQueueAPI()
+		self._cmfg3d_api = Cmfg3dAPI()
+		# initialize authorize status
+		self._authorized = False
 
 	##~~ SettingsPlugin mixin
 
@@ -32,7 +37,7 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 			# put your plugin's default settings here
 			url = "https://www.baidu.com",
 			endpoint = "http://localhost:8080/api",
-			authorize = "http://localhost:8080/authorize",
+			authorize = "http://localhost:8080/oauth",
 			consumerKey = "133f1b38-8a3f-464c-b2d0-ca8bb7887aaf",
 			consumerSecret = "pSyXPRL1vVZAuePcfy6RvT5IvXxqAZj7/7u5ROD4k7BRkpqzZ/4rTxID+CRay2aOmAuGPTLzWQqLkGr+50QMrjrWtp57Wj5VGPNq4XMoko4="
 		)
@@ -84,7 +89,11 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 
 	def on_after_startup(self):
 		self._logger.info("Hello World! (more: %s)" % self._settings.get(["url"]))
-		self.cmfg3dapi.config(self._settings.get(["consumerKey"]), self._settings.get(["consumerSecret"]))
+		self._cmfg3d_api.config(self._settings.get(["consumerKey"]), self._settings.get(["consumerSecret"]),
+							  self._settings.get(["authorize"]), self._settings.get(["endpoint"]))
+		if self._settings.get_boolean(["tokenKey"]):
+			self._authorized = True
+			self._cmfg3d_api.setToken(self._settings.get(["tokenKey"]), self._settings.get(["tokenSecret"]))
 
 	def get_template_configs(self):
 		return [
@@ -92,22 +101,60 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 			dict(type="settings", custom_bindings=False)
 		]
 
-	@octoprint.plugin.BlueprintPlugin.route("/authorize", methods=["GET"])
-	def authorize(self):
-		self.cmfg3dapi.requestToken()
-		return flask.jsonify(self.cmfg3dapi.getAuthorizeUrl())
+	def _heartbeat_cmfg3d(self):
+		if self._authorized:
+			options = self._printer.get_connection_options()
+			self._cmfg3d_api.update_device_options(options)
+			return options
+
+	@octoprint.plugin.BlueprintPlugin.route("/register", methods=["GET"])
+	def register_client(self):
+		if self._authorized:
+			return "Client already registed!"
+		try:
+			self._cmfg3d_api.requestToken()
+			self._start_authorize()
+		except TypeError as ex:
+			self._logger.error(ex)
+			return "TypeError when requesting token: %s" % ex
+		except Exception as ex:
+			self._logger.exception(ex)
+			return "There was a problem requesting token: %s" % ex
+		return self._cmfg3d_api.getAuthorizeUrl()
+
+	def _start_authorize(self):
+		if not self._authorize_thread:
+			self._logger.debug("start authorize thread")
+			self._authorize_thread = threading.Thread(target=self._authorize, name="octoprint.plugin.cmfg3dapi.auth_thread")
+			self._authorize_thread.daemon = True
+			self._authorize_thread.start()
+
+	def _authorize(self):
+		while not self._authorized:
+			try:
+				self._cmfg3d_api.convertToken()
+				self._authorized = True
+			except Exception as ex:
+				time.sleep(10)
+		self._settings.set(["tokenKey"], self._cmfg3d_api.token_key)
+		self._settings.set(["tokenSecret"], self._cmfg3d_api.token_secret)
+		Settings.save(Settings)
 
 	@octoprint.plugin.BlueprintPlugin.route("/listJobs", methods=["GET"])
 	def grabJob(self):
+		self._printer.isPrinting()
 		return
 		#jobList = self.cmfg3dapi.listJobs(flask.request.values["queueId"])
 
 	@octoprint.plugin.BlueprintPlugin.route("/checkSettings", methods=["GET"])
 	def checkSettings(self):
 		result = dict(
-			consumerKey = self.cmfg3dapi.consumer_key,
-			consumerSecret = self.cmfg3dapi.consumer_secret
+			consumerKey = self._cmfg3d_api.consumer_key,
+			consumerSecret = self._cmfg3d_api.consumer_secret
 		)
+		if self._cmfg3d_api.token_key:
+			result["tokenKey"] = self._cmfg3d_api.token_key
+			result["tokenSecret"] = self._cmfg3d_api.token_secret
 		return flask.jsonify(result)
 
 

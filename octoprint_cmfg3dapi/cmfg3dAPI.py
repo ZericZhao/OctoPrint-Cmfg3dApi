@@ -20,7 +20,7 @@ class AuthError(Exception):
     pass
 
 
-class BotQueueAPI():
+class Cmfg3dAPI():
     version = 0.1
     name = 'Bumblebee'
     localIp = None
@@ -28,27 +28,28 @@ class BotQueueAPI():
     consumer_secret = ""
 
     def __init__(self):
-        self.log = logging.getLogger('botqueue')
-#        self.config = hive.config.get()
+        self.log = logging.getLogger('cmfg3dapi')
+        self.log.setLevel(logging.DEBUG)
         self.netStatus = False
         self.netErrors = 0
 
-        # pull in our endpoint urls
-        self.authorize_url = "http://localhost:8080/oauth/"
-        self.endpoint_url = "http://localhost:8080/api/"
-
-        # this is helpful for raspberry pi and future websockets stuff
-        self.localIp = self.getLocalIPAddress()
+        # url default settings
+        self.authorize_url = "http://localhost:8080/oauth"
+        self.endpoint_url = "http://localhost:8080/api"
+        self.token_key = ""
+        self.token_secret = ""
 
         # create our requests session.
         self.session = requests.session()
 
-        # self.consumer = oauth.Consumer(self.config['app']['consumer_key'], self.config['app']['consumer_secret'])
-        # self.consumer_key = "133f1b38-8a3f-464c-b2d0-ca8bb7887aaf"
+        # initialize authorize status
+        self._authorized = False
 
-    def config(self, consumer_key, consumer_secret):
+    def config(self, consumer_key, consumer_secret, authorizeUrl, endpointUrl):
         self.consumer_key = consumer_key
         self.consumer_secret = consumer_secret
+        self.authorize_url = authorizeUrl
+        self.endpoint_url = endpointUrl
 
     def setToken(self, token_key, token_secret):
         self.token_key = token_key
@@ -69,9 +70,6 @@ class BotQueueAPI():
         parameters['_client_version'] = self.version
         parameters['_client_name'] = self.name
 
-        self.localIp = self.getLocalIPAddress()
-        if self.localIp:
-            parameters['_local_ip'] = self.localIp
         # parameters['api_call'] = call
         parameters['api_output'] = 'json'
 
@@ -106,6 +104,9 @@ class BotQueueAPI():
                 response = self.session.send(request.prepare(), timeout=600)
                 self.log.debug("Response status code: %d" % response.status_code)
 
+                if response.status_code == 401:
+                    raise AuthError("Wait for user's authorization.")
+
                 if response.status_code == 414:
                     for key, value in parameters.iteritems():
                         self.log.debug("%s: %d" % (key, len(value)))
@@ -128,7 +129,7 @@ class BotQueueAPI():
             # we need to re-auth, do it.
             except AuthError as ex:
                 self.log.error(ex)
-                self.authorize()
+                retries -= 1
             # these are our known errors that typically mean the network is down.
             except (requests.ConnectionError, requests.Timeout) as ex:
                 # raise NetworkError(str(ex))
@@ -163,19 +164,20 @@ class BotQueueAPI():
     def requestToken(self):
         # make our token request call or error
         self.my_oauth_hook = OAuthHook(consumer_key=self.consumer_key, consumer_secret=self.consumer_secret)
-        result = self.apiCall(call='request_token', ignoreInvalid=True, url=self.authorize_url)
-        self.setToken(result['data']['oauth_token'], result['data']['oauth_token_secret'])
-        return result['data']
+        result = self.apiCall('GET', '/request_token', ignoreInvalid=True, url=self.authorize_url, retries=5)
+        if result["oauth_token"]:
+            self.setToken(result['oauth_token'], result['oauth_token_secret'])
+        else:
+            raise Exception("Error requesting token, please check console and log for details.")
 
     def getAuthorizeUrl(self):
-        return self.authorize_url + "?oauth_token=" + self.token_key
+        return self.authorize_url + "/authorize?oauth_token=" + self.token_key
 
     def convertToken(self):
         # switch our temporary auth token for our real credentials
-        result = self.apiCall('accesstoken', ignoreInvalid=True)
-        if result['status'] == 'success':
-            self.setToken(result['data']['oauth_token'], result['data']['oauth_token_secret'])
-            return result['data']
+        result = self.apiCall('GET', '/access_token', ignoreInvalid=True, url=self.authorize_url, retries=180)
+        if result['oauth_token']:
+            self.setToken(result['oauth_token'], result['oauth_token_secret'])
         else:
             raise Exception("Error converting token: %s" % result['error'])
 
@@ -291,31 +293,24 @@ class BotQueueAPI():
     def getMyBots(self):
         return self.apiCall('GET', 'bots', retries=1)
 
-    def sendDeviceScanResults(self, scan_data, camera_files):
-        return self.apiCall('PUT', 'device/scan-results', {'scan_data': json.dumps(scan_data)}, filepath=camera_files)
+    def update_device_options(self, options):
+        return self.apiCall('PUT', '/device/update-options', {'options': json.dumps(options)})
 
     def findNewJob(self, bot_id, can_slice):
-        return self.apiCall('GET', 'bot-'+bot_id+'/new-job'+'/can-slice-'+can_slice)
+        return self.apiCall('GET', '/bot-'+bot_id+'/new-job'+'/can-slice-'+can_slice)
 
     def getBotInfo(self, bot_id):
-        return self.apiCall('GET', 'bot-info-'+bot_id)
+        return self.apiCall('GET', '/bot-info-'+bot_id)
 
     def updateBotInfo(self, bot_id, data):
-        return self.apiCall('PUT', 'update-bot-'+bot_id, data)
+        return self.apiCall('PUT', '/update-bot-'+bot_id, data)
 
-    def updateSliceJob(self, job_id=0, status="", output="", errors="", filename=""):
+    def updateSliceJob(self, job_id, status="", output="", errors="", filename=""):
         if len(output) > 7000:
             output = "Note: Output has been truncated by BotQueue:\n%s" % output[:7000]
             output = output[:output.rfind('\n')]
-        return self.apiCall('PUT', 'update-slice-job-'+job_id, {'status': status, 'output': output, 'errors': errors},
+        return self.apiCall('PUT', '/update-slice-job-'+job_id, {'status': status, 'output': output, 'errors': errors},
                             filepath=filename)
 
-    def getLocalIPAddress(self):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("202.112.128.51", 80))
-            ip = s.getsockname()[0]
-            s.close()
-        except socket.error:
-            ip = None
-        return ip
+    def get_config(self, bot_id):
+        return self.apiCall('GET', 'bot-'+bot_id+'/config')

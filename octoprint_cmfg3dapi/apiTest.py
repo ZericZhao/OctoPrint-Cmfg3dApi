@@ -1,4 +1,4 @@
-import botqueueapi
+import cmfg3dAPI
 import shutil
 import json
 import os
@@ -10,7 +10,7 @@ class apiTest():
 		self.testURL = "http://localhost:8080/oauth"
 		self.consumerKey = "133f1b38-8a3f-464c-b2d0-ca8bb7887aaf"
 		self.loadLogger()
-		self.apiSDK = botqueueapi.BotQueueAPI()
+		self.apiSDK = cmfg3dAPI.BotQueueAPI()
 
 	def testApiCall(self):
 		method = "GET"
