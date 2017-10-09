@@ -48,6 +48,7 @@ $(function() {
                 console.log(content);
                 self.displayed.push({line: "consumerKey from set: "+content["consumerKey"]});
                 self.displayed.push({line: "consumerSecret from set: "+content["consumerSecret"]});
+                self.displayed.push({line: "authorized: "+content["authorized"]});
                 if (Boolean(content['tokenKey'])){
                     self.displayed.push({line: "tokenKey from obj: "+content['tokenKey']});
                     self.displayed.push({line: "tokenSecret from obj: "+content['tokenSecret']});

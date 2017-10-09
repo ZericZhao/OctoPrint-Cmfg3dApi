@@ -35,11 +35,6 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 	def get_settings_defaults(self):
 		return dict(
 			# put your plugin's default settings here
-			url = "https://www.baidu.com",
-			endpoint = "http://localhost:8080/api",
-			authorize = "http://localhost:8080/oauth",
-			consumerKey = "133f1b38-8a3f-464c-b2d0-ca8bb7887aaf",
-			consumerSecret = "pSyXPRL1vVZAuePcfy6RvT5IvXxqAZj7/7u5ROD4k7BRkpqzZ/4rTxID+CRay2aOmAuGPTLzWQqLkGr+50QMrjrWtp57Wj5VGPNq4XMoko4="
 		)
 
 	##~~ AssetPlugin mixin
@@ -91,7 +86,7 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 		self._logger.info("Hello World! (more: %s)" % self._settings.get(["url"]))
 		self._cmfg3d_api.config(self._settings.get(["consumerKey"]), self._settings.get(["consumerSecret"]),
 							  self._settings.get(["authorize"]), self._settings.get(["endpoint"]))
-		if self._settings.get_boolean(["tokenKey"]):
+		if self._settings.get(["tokenKey"]) is not None:
 			self._authorized = True
 			self._cmfg3d_api.setToken(self._settings.get(["tokenKey"]), self._settings.get(["tokenSecret"]))
 
@@ -150,9 +145,13 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 	def checkSettings(self):
 		result = dict(
 			consumerKey = self._cmfg3d_api.consumer_key,
-			consumerSecret = self._cmfg3d_api.consumer_secret
+			consumerSecret = self._cmfg3d_api.consumer_secret,
+			authorized = self._authorized,
 		)
-		if self._cmfg3d_api.token_key:
+		if self._settings.get(["tokenKey"]) is not None:
+			self._authorized = True
+			self._cmfg3d_api.setToken(self._settings.get(["tokenKey"]), self._settings.get(["tokenSecret"]))
+			result["authorized"] = True
 			result["tokenKey"] = self._cmfg3d_api.token_key
 			result["tokenSecret"] = self._cmfg3d_api.token_secret
 		return flask.jsonify(result)
