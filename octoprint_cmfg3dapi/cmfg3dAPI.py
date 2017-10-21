@@ -34,8 +34,8 @@ class Cmfg3dAPI():
         self.netErrors = 0
 
         # url default settings
-        self.authorize_url = "http://localhost:8080/oauth"
-        self.endpoint_url = "http://localhost:8080/api"
+        self.authorize_url = "http://zericzhao.win:8080/oauth"
+        self.endpoint_url = "http://zericzhao.win:8080/api"
         self.token_key = ""
         self.token_secret = ""
 
@@ -58,7 +58,7 @@ class Cmfg3dAPI():
                                        consumer_key=self.consumer_key,
                                        consumer_secret=self.consumer_secret)
 
-    def apiCall(self, method="GET", call='test', parameters=None, filepath=None, url=None, retries=999999,
+    def apiCall(self, method="GET", call='/test', parameters=None, filepath=None, url=None, retries=999999,
                 ignoreInvalid=False):
         # what url to use?
         if not parameters:
@@ -228,25 +228,25 @@ class Cmfg3dAPI():
             raise RuntimeError("There was a problem authorizing the app: %s" % (ex))
 
     def listQueues(self):
-        return self.apiCall('GET', 'queues')
+        return self.apiCall('GET', '/queues')
 
     def grabQueue(self, queue_id):
-        return self.apiCall('GET', 'queue-'+queue_id+'/info')
+        return self.apiCall('GET', '/queue-'+queue_id+'/info')
 
     def listJobs(self, queue_id):
-        return self.apiCall('GET', 'queue-'+queue_id+'/jobs')
+        return self.apiCall('GET', '/queue-'+queue_id+'/jobs')
 
     def grabJob(self, bot_id, job_id, can_slice):
-        return self.apiCall('PUT', 'bot-'+bot_id+'/grab-job-'+job_id+'/can-slice-'+can_slice)
+        return self.apiCall('PUT', '/bot-'+bot_id+'/grab-job-'+job_id+'/can-slice-'+can_slice)
 
     def dropJob(self, bot_id, job_id, error=False):
-        return self.apiCall('PUT', 'bot-'+bot_id+'/drop-job-'+job_id, {'error': error})
+        return self.apiCall('PUT', '/bot-'+bot_id+'/drop-job-'+job_id, {'error': error})
 
     def cancelJob(self, job_id):
-        return self.apiCall('PUT', 'cancel-job-'+job_id)
+        return self.apiCall('PUT', '/cancel-job-'+job_id)
 
     def failJob(self, job_id):
-        return self.apiCall('PUT', 'fail-job-'+job_id)
+        return self.apiCall('PUT', '/fail-job-'+job_id)
 
     # def createJobFromJob(self, job_id, quantity=1, queue_id=0, name=None):
     #     params = {'job_id': job_id, 'queue_id': queue_id, 'quantity': quantity}
@@ -270,28 +270,28 @@ class Cmfg3dAPI():
     #     return self.apiCall('POST', 'createjob', params, filename)
 
     def downloadedJob(self, bot_id, job_id):
-        return self.apiCall('PUT', 'bot-'+bot_id+'/downloaded-job-'+job_id)
+        return self.apiCall('PUT', '/bot-'+bot_id+'/downloaded-job-'+job_id)
 
     def completeJob(self, bot_id, job_id):
-        return self.apiCall('PUT', 'bot-'+bot_id+'/complete-job-'+job_id)
+        return self.apiCall('PUT', '/bot-'+bot_id+'/complete-job-'+job_id)
 
     def updateJobProgress(self, bot_id, job_id, progress, temps=None):
         if not temps:
             temps = {}
-        return self.apiCall('PUT', 'bot-'+bot_id+'/update-progress-job-'+job_id,
+        return self.apiCall('PUT', '/bot-'+bot_id+'/update-progress-job-'+job_id,
                             {'progress': progress, 'temperatures': json.dumps(temps)}, retries=1)
 
     def webcamUpdate(self, filename, bot_id=None, job_id=None, progress=None, temps=None):
-        return self.apiCall('PUT', 'bot-'+bot_id+'/update-webcam', {
+        return self.apiCall('PUT', '/bot-'+bot_id+'/update-webcam', {
             'job_id': job_id, 'progress': progress,
             'temperatures': json.dumps(temps)
         }, filepath=filename, retries=1)
 
     def jobInfo(self, job_id):
-        return self.apiCall('GET', 'job-'+job_id+'/info')
+        return self.apiCall('GET', '/job-'+job_id+'/info')
 
     def getMyBots(self):
-        return self.apiCall('GET', 'bots', retries=1)
+        return self.apiCall('GET', '/bots', retries=1)
 
     def update_device_options(self, options):
         return self.apiCall('PUT', '/device/update-options', {'options': json.dumps(options)})
@@ -313,4 +313,4 @@ class Cmfg3dAPI():
                             filepath=filename)
 
     def get_config(self, bot_id):
-        return self.apiCall('GET', 'bot-'+bot_id+'/config')
+        return self.apiCall('GET', '/bot-'+bot_id+'/config')

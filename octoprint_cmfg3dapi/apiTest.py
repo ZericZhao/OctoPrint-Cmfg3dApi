@@ -7,14 +7,19 @@ import logging.handlers
 
 class apiTest():
 	def __init__(self):
-		self.testURL = "http://localhost:8080/oauth"
+		self.testURL = "http://zericzhao.win:8080/oauth"
 		self.consumerKey = "133f1b38-8a3f-464c-b2d0-ca8bb7887aaf"
+		self.consumerSecret = "pSyXPRL1vVZAuePcfy6RvT5IvXxqAZj7/7u5ROD4k7BRkpqzZ/4rTxID+CRay2aOmAuGPTLzWQqLkGr+50QMrjrWtp57Wj5VGPNq4XMoko4="
+		self.oauthToken = "8a364f8a-2feb-4ee8-9c79-9c2c67fc6486"
+		self.tokenSecret = "5aTWR5kxuq10u3IsV/PHUEgjLXo0rkUFymvfsPk4dIJsG5XoQ8RojWmW2OLgyy/NJot64r7UpO9jSzmDTLXJCOG7x6hzkeoKAgELk4BYEDE="
 		self.loadLogger()
 		self.apiSDK = cmfg3dAPI.Cmfg3dAPI()
+		self.apiSDK.config(self.consumerKey, self.consumerSecret, self.testURL, "http://zericzhao.win:8080/api")
+		self.apiSDK.setToken(self.oauthToken, self.tokenSecret)
 
 	def testApiCall(self):
 		method = "GET"
-		data = self.apiSDK.apiCall(method, "test")
+		data = self.apiSDK.apiCall(method, "/test")
 		print data["status"]
 		print data["data"]
 

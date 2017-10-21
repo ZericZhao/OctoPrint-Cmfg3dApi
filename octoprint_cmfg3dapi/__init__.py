@@ -156,6 +156,12 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 			result["tokenSecret"] = self._cmfg3d_api.token_secret
 		return flask.jsonify(result)
 
+	@octoprint.plugin.BlueprintPlugin.route("/testRemoteServer", methods=["GET"])
+	def testRemoteServer(self):
+		if self._authorized:
+			data = self._cmfg3d_api.apiCall('GET', '/test')
+			return flask.jsonify(data)
+
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
