@@ -7,4 +7,4 @@ dist
 *.egg*
 .DS_Store
 *.zip
-chenjianwei.py
+*/chenjianwei.py
