@@ -120,7 +120,7 @@ class Cmfg3dAPI():
                         self.log.debug("%s: %d" % (key, len(value)))
                     raise ServerError("Request was too long for this server.")
                 # convert it to json
-                result = "" if ignoreData else response.json()
+                result = True if ignoreData else response.json()
                 # sweet, our request must have gone through.
                 self.netStatus = True
 

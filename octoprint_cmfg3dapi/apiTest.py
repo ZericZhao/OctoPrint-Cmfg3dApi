@@ -18,15 +18,14 @@ class apiTest():
 		self.apiSDK.setToken(self.oauthToken, self.tokenSecret)
 
 	def testApiCall(self):
-		method = "GET"
-		data = self.apiSDK.apiCall(method, "/test")
+		data = self.apiSDK.apiCall('PUT', "/test")
 		print data["status"]
 		print data["data"]
+		print data
 
 	def testUpdateOptions(self):
-		options = {'data': "testList", 'status': "ready"}
-		data = self.apiSDK.update_device_options(options)
-		print data
+		options = {'data': 'testList', 'status': 'ready'}
+		self.apiSDK.update_device_options(options)
 
 	def testQueues(self):
 		queues = self.apiSDK.listQueues()

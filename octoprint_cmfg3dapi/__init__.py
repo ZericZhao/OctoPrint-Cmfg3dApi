@@ -172,6 +172,9 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 	@octoprint.plugin.BlueprintPlugin.route("/updateOptions", methods=["GET"])
 	def updateOptions(self):
 		options = self._printer.get_connection_options()
+		if not self._authorized:
+			options["status"] = "not authorized"
+			return flask.jsonify(options)
 		self._cmfg3d_api.update_device_options(options)
 		return flask.jsonify(options)
 
