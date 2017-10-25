@@ -33,6 +33,40 @@ $(function() {
             self.newUrl(self.settings.settings.plugins.cmfg3dapi.url())
         };
 
+        self.getAccessToken = function () {
+            $.get("/plugin/cmfg3dapi/getAccessToken", {}).done(function (content) {
+                if (Boolean(content["tokenKey"])){
+                    self.displayed.push({line: "Please setup token manually."});
+                    self.displayed.push({line: "token key: "+content["tokenKey"]});
+                    self.displayed.push({line: "token secret: "+content["tokenSecret"]});
+                } else {
+                    self.displayed.push({line: content});
+                }
+            })
+        };
+
+        self.updateOptions = function () {
+            $.get("/plugin/cmfg3dapi/updateOptions", {}).done(function (options) {
+                console.log(options);
+                var ports = "ports: ";
+                for (var port in options['ports']){
+                    ports += port;
+                }
+                self.displayed.push({line: ports});
+            })
+        };
+
+        self.startPrint = function () {
+
+        };
+
+        self.listQueue = function () {
+            $.get("/plugin/cmfg3dapi/listQueue", {}).done(function (content) {
+                console.log(content);
+                self.displayed.push({line: "queue: "+content});
+            });
+        };
+
         self.grabJob = function () {
             console.log("grab job");
             self.displayed.push({line: "grab job"});

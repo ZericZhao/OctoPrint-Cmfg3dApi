@@ -23,6 +23,11 @@ class apiTest():
 		print data["status"]
 		print data["data"]
 
+	def testUpdateOptions(self):
+		options = {'data': "testList", 'status': "ready"}
+		data = self.apiSDK.update_device_options(options)
+		print data
+
 	def testQueues(self):
 		queues = self.apiSDK.listQueues()
 		for queue in queues:
@@ -70,4 +75,5 @@ class apiTest():
 if __name__ == '__main__':
 	api = apiTest()
 	api.testApiCall()
+	api.testUpdateOptions()
 	api.testQueues()

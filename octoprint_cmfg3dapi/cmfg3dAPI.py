@@ -1,3 +1,7 @@
+"""This
+
+"""
+
 import json
 import logging
 import socket
@@ -28,7 +32,7 @@ class Cmfg3dAPI():
     consumer_secret = ""
 
     def __init__(self):
-        self.log = logging.getLogger('cmfg3dapi')
+        self.log = logging.getLogger('octoprint.plugins.cmfg3dapi')
         self.log.setLevel(logging.DEBUG)
         self.netStatus = False
         self.netErrors = 0
@@ -54,12 +58,16 @@ class Cmfg3dAPI():
     def setToken(self, token_key, token_secret):
         self.token_key = token_key
         self.token_secret = token_secret
-        self.my_oauth_hook = OAuthHook(access_token=token_key, access_token_secret=token_secret,
-                                       consumer_key=self.consumer_key,
-                                       consumer_secret=self.consumer_secret)
+        self.my_oauth_hook = OAuthHook(
+            access_token=token_key,
+            access_token_secret=token_secret,
+            consumer_key=self.consumer_key,
+            consumer_secret=self.consumer_secret
+        )
 
     def apiCall(self, method="GET", call='/test', parameters=None, filepath=None, url=None, retries=999999,
-                ignoreInvalid=False):
+                ignoreInvalid=False, ignoreData=False):
+
         # what url to use?
         if not parameters:
             parameters = {}
@@ -106,14 +114,13 @@ class Cmfg3dAPI():
 
                 if response.status_code == 401:
                     raise AuthError("Wait for user's authorization.")
-
+                #
                 if response.status_code == 414:
                     for key, value in parameters.iteritems():
                         self.log.debug("%s: %d" % (key, len(value)))
                     raise ServerError("Request was too long for this server.")
                 # convert it to json
-                result = response.json()
-
+                result = "" if ignoreData else response.json()
                 # sweet, our request must have gone through.
                 self.netStatus = True
 
@@ -123,7 +130,6 @@ class Cmfg3dAPI():
                 # did we get the right http response code?
                 if response.status_code != 200:
                     raise ServerError("Bad response code (%s)" % response.status_code)
-
                 return result
 
             # we need to re-auth, do it.
@@ -294,7 +300,7 @@ class Cmfg3dAPI():
         return self.apiCall('GET', '/bots', retries=1)
 
     def update_device_options(self, options):
-        return self.apiCall('PUT', '/device/update-options', {'options': json.dumps(options)})
+        return self.apiCall('PUT', '/device/update-options', {'options': json.dumps(options)}, ignoreData=True)
 
     def findNewJob(self, bot_id, can_slice):
         return self.apiCall('GET', '/bot-'+bot_id+'/new-job'+'/can-slice-'+can_slice)

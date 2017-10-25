@@ -12,7 +12,7 @@ import threading
 import os
 import flask
 from .cmfg3dAPI import Cmfg3dAPI
-from octoprint.settings import Settings
+from octoprint.settings import settings
 
 
 import octoprint.plugin
@@ -25,10 +25,15 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
                       octoprint.plugin.BlueprintPlugin):
 
 	def __init__(self):
+		self._port = None
 		self._logger = logging.getLogger("octoprint.plugins.cmfg3dapi")
 		self._cmfg3d_api = Cmfg3dAPI()
 		# initialize authorize status
 		self._authorized = False
+		self._authorize_thread = None
+		self._queues = None
+		self._id = None
+		self._job = None
 
 	##~~ SettingsPlugin mixin
 
@@ -73,6 +78,7 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 	##~~ StartupPlugin API
 
 	def on_startup(self, host, port):
+		self._port = port
 		# setup customized logger
 		from octoprint.logging.handlers import CleaningTimedRotatingFileHandler
 		cmfg3d_logging_handler = CleaningTimedRotatingFileHandler(self._settings.get_plugin_logfile_path(), when="D", backupCount=3)
@@ -96,19 +102,12 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 			dict(type="settings", custom_bindings=False)
 		]
 
-	def _heartbeat_cmfg3d(self):
-		if self._authorized:
-			options = self._printer.get_connection_options()
-			self._cmfg3d_api.update_device_options(options)
-			return options
-
 	@octoprint.plugin.BlueprintPlugin.route("/register", methods=["GET"])
 	def register_client(self):
 		if self._authorized:
 			return "Client already registed!"
 		try:
 			self._cmfg3d_api.requestToken()
-			self._start_authorize()
 		except TypeError as ex:
 			self._logger.error(ex)
 			return "TypeError when requesting token: %s" % ex
@@ -116,6 +115,17 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 			self._logger.exception(ex)
 			return "There was a problem requesting token: %s" % ex
 		return self._cmfg3d_api.getAuthorizeUrl()
+
+	@octoprint.plugin.BlueprintPlugin.route("/getAccessToken", methods=["GET"])
+	def request_access_token(self):
+		if self._authorized:
+			return "Client already registed!"
+		self._authorize()
+		data = dict(
+			tokenKey = self._cmfg3d_api.token_key,
+			tokenSecret = self._cmfg3d_api.token_secret
+		)
+		return flask.jsonify(data)
 
 	def _start_authorize(self):
 		if not self._authorize_thread:
@@ -126,20 +136,18 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 
 	def _authorize(self):
 		while not self._authorized:
+			self._logger.info("Prepare to request access token.")
 			try:
 				self._cmfg3d_api.convertToken()
 				self._authorized = True
 			except Exception as ex:
 				time.sleep(10)
-		self._settings.set(["tokenKey"], self._cmfg3d_api.token_key)
-		self._settings.set(["tokenSecret"], self._cmfg3d_api.token_secret)
-		Settings.save(Settings)
-
-	@octoprint.plugin.BlueprintPlugin.route("/listJobs", methods=["GET"])
-	def grabJob(self):
-		self._printer.isPrinting()
-		return
-		#jobList = self.cmfg3dapi.listJobs(flask.request.values["queueId"])
+		# s = settings()
+		# s.set(["plugins", "cmfg3dapi", "tokenKey"], self._cmfg3d_api.token_key)
+		# s.set(["plugins", "cmfg3dapi", "tokenSecret"], self._cmfg3d_api.token_secret)
+		# settings().save()
+		self._logger.debug("Set token key: %s", self._cmfg3d_api.token_key)
+		self._logger.debug("Set token secret: %s", self._cmfg3d_api.token_secret)
 
 	@octoprint.plugin.BlueprintPlugin.route("/checkSettings", methods=["GET"])
 	def checkSettings(self):
@@ -156,11 +164,27 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 			result["tokenSecret"] = self._cmfg3d_api.token_secret
 		return flask.jsonify(result)
 
-	@octoprint.plugin.BlueprintPlugin.route("/testRemoteServer", methods=["GET"])
-	def testRemoteServer(self):
-		if self._authorized:
-			data = self._cmfg3d_api.apiCall('GET', '/test')
-			return flask.jsonify(data)
+	@octoprint.plugin.BlueprintPlugin.route("/listQueue", methods=["GET"])
+	def listQueue(self):
+		self._queues = self._cmfg3d_api.listQueues()
+		return flask.jsonify(self._queues)
+
+	@octoprint.plugin.BlueprintPlugin.route("/updateOptions", methods=["GET"])
+	def updateOptions(self):
+		options = self._printer.get_connection_options()
+		self._cmfg3d_api.update_device_options(options)
+		return flask.jsonify(options)
+
+	@octoprint.plugin.BlueprintPlugin.route("/grabJob", methods=["GET"])
+	def grabJob(self):
+		for queue in self._queues:
+			jobs = self._cmfg3d_api.listJobs(queue["id"])
+			if (len(jobs) <= 0):
+				continue
+			for job in jobs:
+				self._job = self._cmfg3d_api.grabJob(self._id, job["id"], False)
+
+	# jobList = self.cmfg3dapi.listJobs(flask.request.values["queueId"])
 
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
