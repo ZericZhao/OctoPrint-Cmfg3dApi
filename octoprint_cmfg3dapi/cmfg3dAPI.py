@@ -38,8 +38,8 @@ class Cmfg3dAPI():
         self.netErrors = 0
 
         # url default settings
-        self.authorize_url = "http://zericzhao.win:8080/oauth"
-        self.endpoint_url = "http://zericzhao.win:8080/api"
+        self.authorize_url = "http://192.168.2.127:8080/oauth"
+        self.endpoint_url = "http://192.168.2.127:8080/api"
         self.token_key = ""
         self.token_secret = ""
 
@@ -237,13 +237,14 @@ class Cmfg3dAPI():
         return self.apiCall('GET', '/queues')
 
     def grabQueue(self, queue_id):
-        return self.apiCall('GET', '/queue-'+queue_id+'/info')
+        return self.apiCall('GET', '/queue-'+str(queue_id)+'/info')
 
     def listJobs(self, queue_id):
-        return self.apiCall('GET', '/queue-'+queue_id+'/jobs')
+        return self.apiCall('GET', '/queue-'+str(queue_id)+'/jobs')
 
-    def grabJob(self, bot_id, job_id, can_slice):
-        return self.apiCall('PUT', '/bot-'+bot_id+'/grab-job-'+job_id+'/can-slice-'+can_slice)
+    def grabJob(self, bot_id, job_id):
+        # type: (str, str) -> object
+        return self.apiCall('PUT', '/bot-'+str(bot_id)+'/grab-job-'+str(job_id), retries=5)
 
     def dropJob(self, bot_id, job_id, error=False):
         return self.apiCall('PUT', '/bot-'+bot_id+'/drop-job-'+job_id, {'error': error})
@@ -276,16 +277,16 @@ class Cmfg3dAPI():
     #     return self.apiCall('POST', 'createjob', params, filename)
 
     def downloadedJob(self, bot_id, job_id):
-        return self.apiCall('PUT', '/bot-'+bot_id+'/downloaded-job-'+job_id)
+        return self.apiCall('PUT', '/bot-'+str(bot_id)+'/downloaded-job-'+str(job_id))
 
     def completeJob(self, bot_id, job_id):
-        return self.apiCall('PUT', '/bot-'+bot_id+'/complete-job-'+job_id)
+        return self.apiCall('PUT', '/bot-'+str(bot_id)+'/complete-job-'+str(job_id))
 
     def updateJobProgress(self, bot_id, job_id, progress, temps=None):
         if not temps:
             temps = {}
-        return self.apiCall('PUT', '/bot-'+bot_id+'/update-progress-job-'+job_id,
-                            {'progress': progress, 'temperatures': json.dumps(temps)}, retries=1)
+        return self.apiCall('PUT', '/bot-'+str(bot_id)+'/update-progress-job-'+str(job_id),
+                            {'progress': json.dumps(progress), 'temperatures': json.dumps(temps)}, retries=1)
 
     def webcamUpdate(self, filename, bot_id=None, job_id=None, progress=None, temps=None):
         return self.apiCall('PUT', '/bot-'+bot_id+'/update-webcam', {
@@ -294,7 +295,10 @@ class Cmfg3dAPI():
         }, filepath=filename, retries=1)
 
     def jobInfo(self, job_id):
-        return self.apiCall('GET', '/job-'+job_id+'/info')
+        return self.apiCall('GET', '/job-'+str(job_id)+'/info')
+
+    def downloadGcode(self, fileId):
+        return self.apiCall('GET', '/file-content-'+str(fileId), retries=5)
 
     def getMyBots(self):
         return self.apiCall('GET', '/bots', retries=1)
@@ -303,20 +307,20 @@ class Cmfg3dAPI():
         return self.apiCall('PUT', '/device/update-options', {'options': json.dumps(options)}, ignoreData=True)
 
     def findNewJob(self, bot_id, can_slice):
-        return self.apiCall('GET', '/bot-'+bot_id+'/new-job'+'/can-slice-'+can_slice)
+        return self.apiCall('GET', '/bot-'+str(bot_id)+'/new-job'+'/can-slice-'+can_slice)
 
     def getBotInfo(self, bot_id):
-        return self.apiCall('GET', '/bot-info-'+bot_id)
+        return self.apiCall('GET', '/bot-info-'+str(bot_id))
 
     def updateBotInfo(self, bot_id, data):
-        return self.apiCall('PUT', '/update-bot-'+bot_id, data)
+        return self.apiCall('PUT', '/update-bot-'+str(bot_id), data)
 
     def updateSliceJob(self, job_id, status="", output="", errors="", filename=""):
         if len(output) > 7000:
             output = "Note: Output has been truncated by BotQueue:\n%s" % output[:7000]
             output = output[:output.rfind('\n')]
-        return self.apiCall('PUT', '/update-slice-job-'+job_id, {'status': status, 'output': output, 'errors': errors},
+        return self.apiCall('PUT', '/update-slice-job-'+str(job_id), {'status': status, 'output': output, 'errors': errors},
                             filepath=filename)
 
     def get_config(self, bot_id):
-        return self.apiCall('GET', '/bot-'+bot_id+'/config')
+        return self.apiCall('GET', '/bot-'+str(bot_id)+'/config')

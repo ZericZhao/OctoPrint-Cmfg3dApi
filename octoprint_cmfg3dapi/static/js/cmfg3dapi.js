@@ -48,11 +48,11 @@ $(function() {
         self.updateOptions = function () {
             $.get("/plugin/cmfg3dapi/updateOptions", {}).done(function (options) {
                 console.log(options);
-                var ports = "ports: ";
-                for (var port in options['ports']){
-                    ports += port;
+                var content = "ports: ";
+                for (var i=0; i<options.ports.length; i++){
+                    content += options.ports[i];
                 }
-                self.displayed.push({line: ports});
+                self.displayed.push({line: content});
             })
         };
 
@@ -63,14 +63,67 @@ $(function() {
         self.listQueue = function () {
             $.get("/plugin/cmfg3dapi/listQueue", {}).done(function (content) {
                 console.log(content);
-                self.displayed.push({line: "queue: "+content});
+                var queues = JSON.parse(content);
+                for (var i=0; i<queues.length; i++){
+                    var queue = queues[i];
+                    self.displayed.push({line: "queue id: "+queue.id+" name: "+queue.name});
+                }
+            });
+        };
+
+        self.getBots = function () {
+            $.get("/plugin/cmfg3dapi/getBots", {}, function (content) {
+                console.log(content);
+                var bots = JSON.parse(content);
+                for (var i=0; i<bots.length; i++){
+                    var bot = bots[i];
+                    self.displayed.push({line: "bot id: "+bot.id+" name: "+bot.name});
+                }
+            });
+        };
+
+        self.listJobs = function () {
+            $.get("/plugin/cmfg3dapi/listJobs", {}, function (content) {
+                console.log(content);
+                var jobs = JSON.parse(content);
+                for (var i=0; i<jobs.length; i++){
+                    var job = jobs[i];
+                    self.displayed.push({line: "job id: "+job.id+" name: "+job.name});
+                }
             });
         };
 
         self.grabJob = function () {
-            console.log("grab job");
-            self.displayed.push({line: "grab job"});
-            console.log(self.displayed());
+            $.get("/plugin/cmfg3dapi/grabJob", {}).done(function (content) {
+                console.log(content);
+                self.displayed.push({line: "grab job: "+content});
+            });
+        };
+
+        self.getJob = function () {
+            $.get("/plugin/cmfg3dapi/getJob",{},function (content) {
+                console.log(content);
+                self.displayed.push({line: "get job: "+content});
+            });
+        };
+
+        self.download = function () {
+            $.get("/plugin/cmfg3dapi/download", {}, function (content) {
+                console.log(content);
+            });
+        };
+
+        self.startPrint = function () {
+            $.get("/plugin/cmfg3dapi/startPrint",{},function (content) {
+                console.log(content);
+                self.displayed.push({line: content});
+            });
+        };
+
+        self.autorun = function () {
+            $.get("/plugin/cmfg3dapi/autorun",{},function (content) {
+                console.log(content);
+            });
         };
 
         self.clearTerminal = function () {

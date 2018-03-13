@@ -34,6 +34,10 @@ class apiTest():
 			print queue["name"]
 		print queues[0]
 
+	def testBots(self):
+		bots = self.apiSDK.getMyBots()
+		print bots
+
 	def testListJobs(self):
 		queue = self.apiSDK.listJobs()
 
@@ -76,3 +80,4 @@ if __name__ == '__main__':
 	api.testApiCall()
 	api.testUpdateOptions()
 	api.testQueues()
+	api.testBots()

@@ -9,31 +9,58 @@ import logging
 import logging.handlers
 import time
 import threading
+import Queue
 import os
 import flask
+import requests
+import json
+import io
+from time import sleep
 from .cmfg3dAPI import Cmfg3dAPI
-from octoprint.settings import settings
 
 
 import octoprint.plugin
+import octoprint.util
+from octoprint.events import Events
+from octoprint.filemanager import FileDestinations
+from octoprint.filemanager.util import StreamWrapper
 
+def str_safe_get(dictionary, *keys):
+	return reduce(lambda d, k: d.get(k) if isinstance(d, dict) else "", keys, dictionary)
+def float_safe_get(dictionary, *keys):
+	s = str_safe_get(dictionary, *keys)
+	return 0.0 if not s else float(s)
 
 class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
                       octoprint.plugin.AssetPlugin,
                       octoprint.plugin.TemplatePlugin,
                       octoprint.plugin.StartupPlugin,
-                      octoprint.plugin.BlueprintPlugin):
+                      octoprint.plugin.BlueprintPlugin,
+					  octoprint.plugin.EventHandlerPlugin):
+
+	PSTATE_IDLE = "idle"
+	PSTATE_WORKING = "working"
+	PSTATE_WAITING = "waiting"
+	PSTATE_PAUSED = "paused"
+	PSTATE_OFFLINE = "offline"
 
 	def __init__(self):
 		self._port = None
 		self._logger = logging.getLogger("octoprint.plugins.cmfg3dapi")
 		self._cmfg3d_api = Cmfg3dAPI()
+		self._cmfg3d_status_worker = None
 		# initialize authorize status
 		self._authorized = False
 		self._authorize_thread = None
 		self._queues = None
 		self._id = None
+		self._detail = None
 		self._job = None
+		self._currentPath = None
+		self._update_interval = 60
+		self._pstate = self.PSTATE_OFFLINE
+		self._queueId = None
+		self._task_queue = Queue.Queue()
 
 	##~~ SettingsPlugin mixin
 
@@ -96,6 +123,76 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 			self._authorized = True
 			self._cmfg3d_api.setToken(self._settings.get(["tokenKey"]), self._settings.get(["tokenSecret"]))
 
+	def _start_cmfg3d_status(self):
+		if not self._cmfg3d_status_worker:
+			self._logger.debug("starting heartbeat")
+			self._cmfg3d_status_worker = threading.Thread(target=self._cmfg3d_status_heartbeat)
+			self._cmfg3d_status_worker.setDaemon(True)
+			self._cmfg3d_status_worker.start()
+
+	def _cmfg3d_status_heartbeat(self):
+		self._logger.debug("heartbeat")
+		status_sent = 0
+		if self._authorized:
+			self._logger.debug("self authorized: {}".format(repr(self._authorized)))
+			options = self._printer.get_connection_options()
+			self._cmfg3d_api.update_device_options(options)
+			bots = self._cmfg3d_api.getMyBots()
+			self._logger.debug("set self bot id: %d", self._id)
+			self._id = bots[0]["id"]
+			while True:
+				botInfo = self._cmfg3d_api.getBotInfo(self._id)
+				if botInfo["status"] == self.PSTATE_OFFLINE or botInfo["status"] == self.PSTATE_WAITING:
+					sleep(self._update_interval)
+					continue
+				elif botInfo["status"] == self.PSTATE_WORKING:
+					if self._printer.is_printing():
+						temperatures = self._printer.get_current_temperatures()
+						status = self._printer.get_current_data()
+						self._cmfg3d_api.updateJobProgress(self._id, self._job, status, temperatures)
+						sleep(self._update_interval)
+						continue
+					elif self._printer.is_closed_or_error():
+						self._cmfg3d_api.dropJob()
+						continue
+					else:
+						sleep(self._update_interval)
+						continue
+				elif botInfo["status"] == self.PSTATE_IDLE:
+					if not self._printer.is_operational():
+						self._printer
+					job = self._cmfg3d_api.listJobs()
+					if connection[0] == "Closed":
+						self._printer.connect()
+		else:
+			self._logger.warn("client unauthorized, please start after register on cmfg3d")
+			return
+
+	def _status_upload(self):
+		self._logger.debug("progress sync")
+		if self._authorized:
+			while not self._printer.is_closed_or_error():
+				temps = self._printer.get_current_temperatures()
+				data = self._printer.get_current_data()
+				job = self._printer.get_current_job()
+				self._logger.debug("update progress: %s\ntemps: %s",json.dumps(data["progress"]), json.dumps(temps))
+				self._cmfg3d_api.updateJobProgress(self._id, self._job["id"], data["progress"], temps)
+				sleep(5)
+		else:
+			self._logger.warn("client unauthorized!")
+			return
+
+	def on_event(self, event, payload):
+		self._logger.debug("on event: {}".format(repr(event)))
+		if event == Events.PRINT_STARTED or event == Events.PRINT_RESUMED:
+			self._pstate = self.PSTATE_WORKING
+			self._update_interval = 10
+			self._logger.debug("Update interval to {}".format(self._update_interval))
+		elif event == Events.PRINT_PAUSED:
+			self._pstate = self.PSTATE_PAUSED
+		elif event == Events.PRINT_DONE:
+			self._pstate = self.PSTATE_WAITING
+
 	def get_template_configs(self):
 		return [
 			dict(type="tab", custom_bindings=False),
@@ -141,7 +238,7 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 				self._cmfg3d_api.convertToken()
 				self._authorized = True
 			except Exception as ex:
-				time.sleep(10)
+				sleep(10)
 		# s = settings()
 		# s.set(["plugins", "cmfg3dapi", "tokenKey"], self._cmfg3d_api.token_key)
 		# s.set(["plugins", "cmfg3dapi", "tokenSecret"], self._cmfg3d_api.token_secret)
@@ -167,7 +264,8 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 	@octoprint.plugin.BlueprintPlugin.route("/listQueue", methods=["GET"])
 	def listQueue(self):
 		self._queues = self._cmfg3d_api.listQueues()
-		return flask.jsonify(self._queues)
+		self._logger.debug("set queues: %s", self._queues)
+		return json.dumps(self._queues)
 
 	@octoprint.plugin.BlueprintPlugin.route("/updateOptions", methods=["GET"])
 	def updateOptions(self):
@@ -178,14 +276,121 @@ class Cmfg3dapiPlugin(octoprint.plugin.SettingsPlugin,
 		self._cmfg3d_api.update_device_options(options)
 		return flask.jsonify(options)
 
+	@octoprint.plugin.BlueprintPlugin.route("/getBots", methods=["GET"])
+	def getBots(self):
+		bots = self._cmfg3d_api.getMyBots()
+		device = bots[0]
+		self._logger.debug("set self bot id: %d", device['id'])
+		self._id = device['id']
+		self._detail = device
+		return json.dumps(bots)
+
+	@octoprint.plugin.BlueprintPlugin.route("/listJobs", methods=["GET"])
+	def listJobs(self):
+		jobs = []
+		for queue in self._queues:
+			jobs.extend(self._cmfg3d_api.listJobs(queue["id"]))
+		return json.dumps(jobs)
+
+	@octoprint.plugin.BlueprintPlugin.route("/getJob", methods=["GET"])
+	def getJob(self):
+		jobId = self._detail["job_id"]
+		if (jobId != 0):
+			self._job = self._cmfg3d_api.jobInfo(jobId)
+			return json.dumps(self._job)
+		else:
+			return "No current job"
+
 	@octoprint.plugin.BlueprintPlugin.route("/grabJob", methods=["GET"])
 	def grabJob(self):
+		# self.getSelfBotInfo()
 		for queue in self._queues:
-			jobs = self._cmfg3d_api.listJobs(queue["id"])
+			self._logger.debug("get jobs from queue: %d", queue['id'])
+			jobs = self._cmfg3d_api.listJobs(queue['id'])
 			if (len(jobs) <= 0):
 				continue
 			for job in jobs:
-				self._job = self._cmfg3d_api.grabJob(self._id, job["id"], False)
+				self._logger.debug("self id: %d, grab job id: %d",self._id,job['id'])
+				self._job = self._cmfg3d_api.grabJob(self._id, job['id'])
+				if not self._job == False:
+					break
+			if not self._job == False:
+				break
+		if not self._job == False:
+			return flask.jsonify(self._job)
+		else:
+			return "No job to grab."
+
+	@octoprint.plugin.BlueprintPlugin.route("/download", methods=["GET"])
+	def downloadGcode(self):
+		if self._job == None:
+			return "No current job found"
+		gcodeFile = self._cmfg3d_api.downloadGcode(self._job["file_id"])
+		# return json.dumps(gcodeFile)
+		path = self._file_manager.add_folder(FileDestinations.LOCAL, "cmfg3d")
+		path = self._file_manager.join_path(FileDestinations.LOCAL, path, "current-print")
+		self._currentPath = path + ".gcode"
+		self._file_manager.add_file(FileDestinations.LOCAL, self._currentPath,
+									StreamWrapper(self._currentPath, io.StringIO(gcodeFile["content"])), allow_overwrite=True)
+		return self._currentPath
+
+	@octoprint.plugin.BlueprintPlugin.route("/startPrint", methods=["GET"])
+	def startPrint(self):
+		if self._printer.is_printing():
+			return "is printing"
+		if self._printer.is_closed_or_error():
+			self._printer.disconnect()
+			self._printer.connect()
+		path = self._file_manager.path_on_disk(FileDestinations.LOCAL, self._currentPath)
+		self._printer.select_file(path, False, printAfterSelect=True)
+		return "Start printing file: "+path
+
+	@octoprint.plugin.BlueprintPlugin.route("/autorun", methods=["GET"])
+	def autoRun(self):
+		if not self._authorized:
+			return
+		self._queues = self._cmfg3d_api.listQueues()
+		bots = self._cmfg3d_api.getMyBots()
+		device = bots[0]
+		self._logger.debug("set self bot id: %d", device['id'])
+		self._id = device['id']
+		self._detail = device
+		for queue in self._queues:
+			self._logger.debug("get jobs from queue: %d", queue['id'])
+			jobs = self._cmfg3d_api.listJobs(queue['id'])
+			if (len(jobs) <= 0):
+				continue
+			for job in jobs:
+				self._logger.debug("self id: %d, grab job id: %d",self._id,job['id'])
+				self._job = self._cmfg3d_api.grabJob(self._id, job['id'])
+				if not self._job == False:
+					break
+			if not self._job == False:
+				break
+		if self._job == None:
+				return "No current job found"
+		gcodeFile = self._cmfg3d_api.downloadGcode(self._job["file_id"])
+		path = self._file_manager.add_folder(FileDestinations.LOCAL, "cmfg3d")
+		path = self._file_manager.join_path(FileDestinations.LOCAL, path, "current-print")
+		self._currentPath = path + ".gcode"
+		self._file_manager.add_file(FileDestinations.LOCAL, self._currentPath,
+									StreamWrapper(self._currentPath, io.StringIO(gcodeFile["content"])), allow_overwrite=True)
+		if self._printer.is_printing():
+			return "is printing"
+		if self._printer.is_closed_or_error():
+			self._printer.disconnect()
+			self._printer.connect()
+		path = self._file_manager.path_on_disk(FileDestinations.LOCAL, self._currentPath)
+		self._printer.select_file(path, False, printAfterSelect=True)
+		if not self._cmfg3d_status_worker:
+			self._logger.debug("starting heartbeat")
+			self._cmfg3d_status_worker = threading.Thread(target=self._status_upload())
+			self._cmfg3d_status_worker.setDaemon(True)
+			self._cmfg3d_status_worker.start()
+			return "Start heartbeat"
+		else:
+			return "heartbeat already started"
+
 
 	# jobList = self.cmfg3dapi.listJobs(flask.request.values["queueId"])
 
